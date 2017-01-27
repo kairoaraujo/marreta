@@ -17,10 +17,16 @@ def add_user():
             'email':'E-Mail',
             'password':'password',
             'address':'Address'})
+
+
     if form.process().accepted:
+        # include user on marreta_users group
+        db.auth_membership.insert(user_id=form.vars.id, group_id=4)
         response.flash = 'User Added!'
     elif form.errors:
         response.flash = 'Error to add user! Verify data.'
+
+
     return dict(form=form)
 
 
@@ -40,8 +46,9 @@ def list_users():
 @auth.requires(auth.has_membership('marreta_admin'))
 def manage_user():
     user_id = request.args(0) or redirect(URL('list_users'))
-    form_user = SQLFORM(db.auth_user, user_id, deletable=True).process()
-    membership_user_panel = LOAD(request.controller,
+    form = SQLFORM(db.auth_user, user_id, deletable=True).process()
+
+    membership_panel = LOAD(request.controller,
                             'manage_membership.html',
                              args=[user_id],
                              ajax=True)
@@ -50,8 +57,9 @@ def manage_user():
                             'manage_dc_membership.html',
                              args=[user_id],
                              ajax=True)
-    return dict(form_user=form_user,
-                membership_user_panel=membership_user_panel,
+
+    return dict(form=form,
+                membership_panel=membership_panel,
                 membership_dc_panel=membership_dc_panel)
 
 @auth.requires(auth.has_membership('marreta_admin'))
@@ -59,7 +67,7 @@ def manage_membership():
     user_id = request.args(0) or redirect(URL('list_users'))
     db.auth_membership.user_id.default = int(user_id)
     db.auth_membership.user_id.writable = False
-    form_user_member = SQLFORM.grid(db.auth_membership.user_id == user_id,
+    form_user = SQLFORM.grid(db.auth_membership.user_id == user_id,
                        args=[user_id],
                        searchable=False,
                        deletable=True,
@@ -67,25 +75,22 @@ def manage_membership():
                        selectable=False,
                        csv=False,
                        user_signature=False)  # change to True in production
-    return form_user_member
+    return form_user
 
 @auth.requires(auth.has_membership('marreta_admin'))
 def manage_dc_membership():
-    auth_id = request.args(0) or redirect(URL('list_users'))
-    db.auth_membership.user_id.default = int(auth_id)
-    db.auth_membership.user_id.writable = False
-    form_dc_member = SQLFORM.grid(db.auth_membership.user_id == auth_id,
-                       args=[auth_id],
+    user_id = request.args(0) or redirect(URL('list_users'))
+    db.auth_dc_membership.auth_id.default = int(user_id)
+    db.auth_dc_membership.auth_id.writable = False
+    form_dc = SQLFORM.grid(db.auth_dc_membership.auth_id == user_id,
+                       args=[user_id],
                        searchable=False,
                        deletable=True,
                        details=False,
                        selectable=False,
                        csv=False,
-                       user_signature=False)  # change to True in production
-    return form_dc_member
-
-
-
+                       user_signature=True)  # change to True in production
+    return form_dc
 #
 # DC Management
 #
@@ -116,8 +121,29 @@ def list_dcs():
 def manage_dc():
     dc_id = request.args(0) or redirect(URL('list_dcs'))
     form = SQLFORM(db.dc, dc_id, deletable=True).process()
-    return dict(form=form)
 
+    manage_approvers_panel = LOAD(request.controller,
+                                  'manage_approvers.html',
+                                  args=[dc_id],
+                                  ajax=True)
+
+    return dict(form=form, 
+                manage_approvers_panel=manage_approvers_panel)
+
+@auth.requires(auth.has_membership('marreta_admin'))
+def manage_approvers():
+    dc_id = request.args(0) or redirect(URL('list_dcs'))
+    db.auth_dc_approvers.dc.default = int(dc_id)
+    db.auth_dc_approvers.dc.writable = False
+    form_approvers = SQLFORM.grid(db.auth_dc_approvers.dc == dc_id,
+                                  args=[dc_id],
+                                  searchable=False,
+                                  deletable=True,
+                                  details=False,
+                                  selectable=False,
+                                  csv=False,
+                                  user_signature=False)  # change to True in production
+    return form_approvers
 
 #
 # IC Management

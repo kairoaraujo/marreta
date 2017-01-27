@@ -167,6 +167,15 @@ db.define_table('auth_dc_membership',
                     db, db.auth_user, '%(first_name)s %(last_name)s',
                     error_message='Required Field')),
                 Field('dc', 'string', requires=IS_IN_DB(
+                    db, db.dc, '%(dc)s', error_message='Required Filed')),
+                format='%(dc)s'
+                )
+
+db.define_table('auth_dc_approvers',
+                Field('auth_id', 'string', requires=IS_IN_DB(
+                    db, db.auth_user, '%(first_name)s %(last_name)s',
+                    error_message='Required Field')),
+                Field('dc', 'string', requires=IS_IN_DB(
                     db, db.dc, '%(dc)s', error_message='Required Filed'))
                 )
 
