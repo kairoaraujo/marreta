@@ -40,19 +40,26 @@ def list_users():
 @auth.requires(auth.has_membership('marreta_admin'))
 def manage_user():
     user_id = request.args(0) or redirect(URL('list_users'))
-    form = SQLFORM(db.auth_user, user_id, deletable=True).process()
-    membership_panel = LOAD(request.controller,
+    form_user = SQLFORM(db.auth_user, user_id, deletable=True).process()
+    membership_user_panel = LOAD(request.controller,
                             'manage_membership.html',
                              args=[user_id],
                              ajax=True)
-    return dict(form=form,membership_panel=membership_panel)
+
+    membership_dc_panel = LOAD(request.controller,
+                            'manage_dc_membership.html',
+                             args=[user_id],
+                             ajax=True)
+    return dict(form_user=form_user,
+                membership_user_panel=membership_user_panel,
+                membership_dc_panel=membership_dc_panel)
 
 @auth.requires(auth.has_membership('marreta_admin'))
 def manage_membership():
     user_id = request.args(0) or redirect(URL('list_users'))
     db.auth_membership.user_id.default = int(user_id)
     db.auth_membership.user_id.writable = False
-    form = SQLFORM.grid(db.auth_membership.user_id == user_id,
+    form_user_member = SQLFORM.grid(db.auth_membership.user_id == user_id,
                        args=[user_id],
                        searchable=False,
                        deletable=True,
@@ -60,7 +67,24 @@ def manage_membership():
                        selectable=False,
                        csv=False,
                        user_signature=False)  # change to True in production
-    return form
+    return form_user_member
+
+@auth.requires(auth.has_membership('marreta_admin'))
+def manage_dc_membership():
+    auth_id = request.args(0) or redirect(URL('list_users'))
+    db.auth_membership.user_id.default = int(auth_id)
+    db.auth_membership.user_id.writable = False
+    form_dc_member = SQLFORM.grid(db.auth_membership.user_id == auth_id,
+                       args=[auth_id],
+                       searchable=False,
+                       deletable=True,
+                       details=False,
+                       selectable=False,
+                       csv=False,
+                       user_signature=False)  # change to True in production
+    return form_dc_member
+
+
 
 #
 # DC Management
